@@ -24,7 +24,7 @@ export default function SignupPage() {
     e.preventDefault();
     // Demo: just redirect to inventory app
     alert('Demo: Account created! Redirecting to inventory app...');
-    window.location.href = 'http://localhost:3001';
+    window.location.href = process.env.NODE_ENV === 'production' ? '/inventory' : 'http://localhost:3001';
   };
 
   return (
