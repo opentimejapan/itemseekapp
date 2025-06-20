@@ -1,44 +1,78 @@
-import { pgTable, text, integer, timestamp, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, timestamp, boolean, jsonb, uuid } from 'drizzle-orm/pg-core';
 
-export const categoryEnum = pgEnum('category', ['inventory', 'linen', 'equipment', 'supplies']);
-export const itemStatusEnum = pgEnum('item_status', ['available', 'in-use', 'maintenance', 'dirty', 'clean']);
-export const roomStatusEnum = pgEnum('room_status', ['clean', 'dirty', 'occupied', 'maintenance']);
-export const laundryStatusEnum = pgEnum('laundry_status', ['dirty', 'washing', 'drying', 'clean', 'delivered']);
-export const priorityEnum = pgEnum('priority', ['normal', 'rush', 'express']);
-
-export const items = pgTable('items', {
-  id: text('id').primaryKey(),
+// Organizations for multi-tenancy
+export const organizations = pgTable('organizations', {
+  id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  quantity: integer('quantity').notNull().default(0),
-  location: text('location').notNull(),
-  category: categoryEnum('category').notNull(),
-  status: itemStatusEnum('status').notNull(),
-  lastUpdated: timestamp('last_updated').notNull().defaultNow()
-});
-
-export const rooms = pgTable('rooms', {
-  id: text('id').primaryKey(),
-  number: text('number').notNull().unique(),
-  status: roomStatusEnum('status').notNull().default('clean'),
-  lastCleaned: timestamp('last_cleaned')
-});
-
-export const laundryItems = pgTable('laundry_items', {
-  id: text('id').primaryKey(),
-  type: text('type').notNull(),
-  roomId: text('room_id').references(() => rooms.id),
-  status: laundryStatusEnum('status').notNull(),
-  weight: integer('weight'),
-  priority: priorityEnum('priority').notNull().default('normal'),
+  industry: text('industry').notNull(),
+  config: jsonb('config').notNull(), // Stores BusinessConfig
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
-export const maintenanceTasks = pgTable('maintenance_tasks', {
-  id: text('id').primaryKey(),
-  equipmentId: text('equipment_id').references(() => items.id),
-  description: text('description').notNull(),
-  dueDate: timestamp('due_date').notNull(),
-  completed: boolean('completed').notNull().default(false),
-  technician: text('technician'),
-  completedAt: timestamp('completed_at')
+// Items - universal inventory
+export const items = pgTable('items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  name: text('name').notNull(),
+  quantity: integer('quantity').notNull().default(0),
+  unit: text('unit').notNull(),
+  location: text('location').notNull(),
+  category: text('category').notNull(),
+  status: text('status').notNull(),
+  metadata: jsonb('metadata').default({}),
+  lastUpdated: timestamp('last_updated').notNull().defaultNow()
+});
+
+// Locations - rooms, warehouses, zones, etc.
+export const locations = pgTable('locations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  name: text('name').notNull(),
+  type: text('type').notNull(),
+  status: text('status').notNull(),
+  parentId: uuid('parent_id').references(() => locations.id),
+  metadata: jsonb('metadata').default({}),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Tasks - cleaning, maintenance, delivery, etc.
+export const tasks = pgTable('tasks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  type: text('type').notNull(),
+  targetId: uuid('target_id').notNull(),
+  targetType: text('target_type').notNull(), // 'item' or 'location'
+  status: text('status').notNull(),
+  priority: text('priority').notNull(),
+  assignee: text('assignee'),
+  dueDate: timestamp('due_date'),
+  completedAt: timestamp('completed_at'),
+  metadata: jsonb('metadata').default({}),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Transactions - track all inventory movements
+export const transactions = pgTable('transactions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  type: text('type').notNull(), // in, out, transfer, adjust, consume, produce
+  itemId: uuid('item_id').notNull().references(() => items.id),
+  quantity: integer('quantity').notNull(),
+  fromLocation: text('from_location'),
+  toLocation: text('to_location'),
+  reason: text('reason').notNull(),
+  userId: text('user_id').notNull(),
+  metadata: jsonb('metadata').default({}),
+  timestamp: timestamp('timestamp').notNull().defaultNow()
+});
+
+// Users - simple user management
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  organizationId: uuid('organization_id').notNull().references(() => organizations.id),
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  role: text('role').notNull().default('user'),
+  metadata: jsonb('metadata').default({}),
+  createdAt: timestamp('created_at').notNull().defaultNow()
 });
