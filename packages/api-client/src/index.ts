@@ -1,7 +1,7 @@
 // Shared API client for all micro-apps (<50 lines)
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3100';
 
-// Auth token management
+// Auth token management  
 let authToken: string | null = null;
 
 export const setAuthToken = (token: string) => {
