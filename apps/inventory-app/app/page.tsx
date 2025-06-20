@@ -1,20 +1,26 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { type Item, type BusinessConfig } from '@itemseek/api-contracts';
+import { fetcher, apiFetch, login } from '@itemseek/api-client';
 
-// Industry-agnostic inventory app (<95 lines)
+// Mobile-first inventory with API connection (<95 lines)
 export default function InventoryApp() {
-  const { data: config } = useSWR<BusinessConfig>('/api/config');
-  const { data: items, mutate } = useSWR<Item[]>('/api/items');
+  const [isAuth, setIsAuth] = useState(false);
+  const { data: config } = useSWR<BusinessConfig>(isAuth ? '/api/config' : null, fetcher);
+  const { data: items, mutate } = useSWR<Item[]>(isAuth ? '/api/items' : null, fetcher);
   const [category, setCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Auto-login for demo
+  useEffect(() => {
+    login('demo@itemseek.com', 'demo123').then(() => setIsAuth(true));
+  }, []);
+
   const handleQuantityUpdate = async (id: string, delta: number) => {
     if ('vibrate' in navigator) navigator.vibrate(10);
-    await fetch(`/api/items/${id}/transact`, {
+    await apiFetch(`/api/items/${id}/transact`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         type: delta > 0 ? 'in' : 'out', 
         quantity: Math.abs(delta),
@@ -31,6 +37,8 @@ export default function InventoryApp() {
     return matchesCategory && matchesSearch;
   });
 
+  if (!isAuth) return <div className="p-4">Connecting...</div>;
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <header className="sticky top-0 z-10 bg-white shadow-sm">
@@ -39,7 +47,6 @@ export default function InventoryApp() {
           <p className="text-sm text-gray-500">{items?.length || 0} items tracked</p>
         </div>
         
-        {/* Search bar */}
         <div className="px-4 pb-3">
           <input
             type="search"
@@ -51,7 +58,6 @@ export default function InventoryApp() {
         </div>
       </header>
       
-      {/* Dynamic categories from business config */}
       <div className="px-4 py-3 overflow-x-auto flex gap-3 no-scrollbar">
         {categories.map(cat => (
           <button
@@ -66,7 +72,6 @@ export default function InventoryApp() {
         ))}
       </div>
 
-      {/* Universal item cards */}
       <div className="px-4 space-y-3">
         {filtered?.map((item) => (
           <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm">

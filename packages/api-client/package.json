@@ -1,0 +1,9 @@
+{
+  "name": "@itemseek/api-client",
+  "version": "0.0.1",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@itemseek/api-contracts": "workspace:*"
+  }
+}
