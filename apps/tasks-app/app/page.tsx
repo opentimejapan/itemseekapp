@@ -1,26 +1,29 @@
 'use client';
 import { useState } from 'react';
-import useSWR from 'swr';
-import { type Task, type BusinessConfig } from '@itemseek/api-contracts';
+import { type Task } from '@itemseek/api-contracts';
+
+// Demo tasks data
+const demoTasks: Task[] = [
+  { id: '1', type: 'cleaning', targetId: 'Room 201', assignee: 'Maria', priority: 'high', status: 'pending', dueDate: new Date(Date.now() + 86400000), metadata: {} },
+  { id: '2', type: 'maintenance', targetId: 'AC Unit 5', assignee: 'John', priority: 'urgent', status: 'in-progress', dueDate: new Date(), metadata: {} },
+  { id: '3', type: 'delivery', targetId: 'Kitchen Supplies', assignee: 'Alex', priority: 'normal', status: 'pending', dueDate: new Date(Date.now() + 172800000), metadata: {} },
+  { id: '4', type: 'cleaning', targetId: 'Lobby Area', assignee: 'Sarah', priority: 'low', status: 'completed', dueDate: new Date(Date.now() - 86400000), metadata: {} },
+];
 
 // Universal task management (<90 lines) - cleaning, maintenance, delivery, etc.
 export default function TasksApp() {
-  const { data: config } = useSWR<BusinessConfig>('/api/config');
-  const { data: tasks, mutate } = useSWR<Task[]>('/api/tasks');
+  const [tasks, setTasks] = useState<Task[]>(demoTasks);
   const [filter, setFilter] = useState<string>('pending');
 
-  const updateTaskStatus = async (id: string, status: string) => {
+  const updateTaskStatus = (id: string, status: string) => {
     if ('vibrate' in navigator) navigator.vibrate(20);
-    await fetch(`/api/tasks/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    mutate();
+    setTasks(tasks.map(task => 
+      task.id === id ? { ...task, status } : task
+    ));
   };
 
   const statuses = ['pending', 'in-progress', 'completed'];
-  const filtered = tasks?.filter(task => task.status === filter);
+  const filtered = tasks.filter(task => task.status === filter);
   
   const priorityColors = {
     low: 'bg-gray-100',
@@ -34,7 +37,7 @@ export default function TasksApp() {
       <header className="sticky top-0 z-10 bg-white shadow-sm px-4 py-3">
         <h1 className="text-xl font-bold">Tasks</h1>
         <p className="text-sm text-gray-500">
-          {tasks?.filter(t => t.status === 'pending').length || 0} pending
+          {tasks.filter(t => t.status === 'pending').length} pending
         </p>
       </header>
 
@@ -53,7 +56,7 @@ export default function TasksApp() {
             >
               {status.replace('-', ' ')}
               <span className="ml-2 text-sm">
-                ({tasks?.filter(t => t.status === status).length || 0})
+                ({tasks.filter(t => t.status === status).length})
               </span>
             </button>
           ))}
@@ -62,7 +65,7 @@ export default function TasksApp() {
 
       {/* Task cards - adaptable to any task type */}
       <div className="px-4 py-4 space-y-3">
-        {filtered?.map((task) => (
+        {filtered.map((task) => (
           <div key={task.id} 
                className={`rounded-2xl overflow-hidden shadow-sm ${priorityColors[task.priority]}`}>
             <div className="p-4 bg-white bg-opacity-90">

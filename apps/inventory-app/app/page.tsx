@@ -1,50 +1,61 @@
 'use client';
-import { useState, useEffect } from 'react';
-import useSWR from 'swr';
+import { useState } from 'react';
 import { type Item, type BusinessConfig } from '@itemseek/api-contracts';
-import { fetcher, apiFetch, login } from '@itemseek/api-client';
 
-// Mobile-first inventory with API connection (<95 lines)
+// Demo data for standalone operation
+const demoConfig: BusinessConfig = {
+  id: '1',
+  name: 'Demo Hotel',
+  industry: 'hospitality',
+  settings: {},
+  createdAt: new Date(),
+  itemCategories: ['Linen', 'Cleaning', 'Amenities', 'Food & Beverage'],
+  statuses: ['available', 'low', 'out of stock'],
+  units: ['pieces', 'kg', 'boxes', 'units']
+};
+
+const demoItems: Item[] = [
+  { id: '1', name: 'Bath Towels', quantity: 150, unit: 'pieces', location: 'Storage Room A', category: 'Linen', status: 'available', lastUpdated: new Date(), metadata: {} },
+  { id: '2', name: 'Hand Soap', quantity: 25, unit: 'boxes', location: 'Supply Closet', category: 'Amenities', status: 'low', lastUpdated: new Date(), metadata: {} },
+  { id: '3', name: 'Pillow Cases', quantity: 200, unit: 'pieces', location: 'Linen Room', category: 'Linen', status: 'available', lastUpdated: new Date(), metadata: {} },
+  { id: '4', name: 'Cleaning Spray', quantity: 0, unit: 'units', location: 'Janitor Closet', category: 'Cleaning', status: 'out of stock', lastUpdated: new Date(), metadata: {} },
+];
+
+// Mobile-first inventory with demo data (<95 lines)
 export default function InventoryApp() {
-  const [isAuth, setIsAuth] = useState(false);
-  const { data: config } = useSWR<BusinessConfig>(isAuth ? '/api/config' : null, fetcher);
-  const { data: items, mutate } = useSWR<Item[]>(isAuth ? '/api/items' : null, fetcher);
+  const [items, setItems] = useState<Item[]>(demoItems);
   const [category, setCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const config = demoConfig;
 
-  // Auto-login for demo
-  useEffect(() => {
-    login('demo@itemseek.com', 'demo123').then(() => setIsAuth(true));
-  }, []);
-
-  const handleQuantityUpdate = async (id: string, delta: number) => {
+  const handleQuantityUpdate = (id: string, delta: number) => {
     if ('vibrate' in navigator) navigator.vibrate(10);
-    await apiFetch(`/api/items/${id}/transact`, {
-      method: 'POST',
-      body: JSON.stringify({ 
-        type: delta > 0 ? 'in' : 'out', 
-        quantity: Math.abs(delta),
-        reason: 'Manual adjustment'
-      })
-    });
-    mutate();
+    setItems(items.map(item => {
+      if (item.id === id) {
+        const newQuantity = Math.max(0, item.quantity + delta);
+        return { 
+          ...item, 
+          quantity: newQuantity,
+          status: newQuantity === 0 ? 'out of stock' : newQuantity < 50 ? 'low' : 'available'
+        };
+      }
+      return item;
+    }));
   };
 
   const categories = ['all', ...(config?.itemCategories || [])];
-  const filtered = items?.filter(item => {
+  const filtered = items.filter(item => {
     const matchesCategory = category === 'all' || item.category === category;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
-  if (!isAuth) return <div className="p-4">Connecting...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <header className="sticky top-0 z-10 bg-white shadow-sm">
         <div className="px-4 py-3">
           <h1 className="text-xl font-bold">{config?.name || 'Inventory'}</h1>
-          <p className="text-sm text-gray-500">{items?.length || 0} items tracked</p>
+          <p className="text-sm text-gray-500">{items.length} items tracked</p>
         </div>
         
         <div className="px-4 pb-3">
@@ -73,7 +84,7 @@ export default function InventoryApp() {
       </div>
 
       <div className="px-4 space-y-3">
-        {filtered?.map((item) => (
+        {filtered.map((item) => (
           <div key={item.id} className="bg-white rounded-2xl p-4 shadow-sm">
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">

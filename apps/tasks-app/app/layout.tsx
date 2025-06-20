@@ -1,8 +1,8 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Locations App',
-  description: 'Hotel locations management',
+  title: 'Tasks App',
+  description: 'Task management for hotel operations',
 }
 
 export default function RootLayout({
