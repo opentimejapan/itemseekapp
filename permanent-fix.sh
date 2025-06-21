@@ -3,7 +3,7 @@
 echo "🔧 Permanent Fix for api-client Build Issue"
 echo "=========================================="
 
-cd /var/www/itemseekapp || cd /data/projects/itemseekapp || exit 1
+cd /data/projects/itemseekapp || exit 1
 
 echo "📦 Step 1: Installing build tools for api-client..."
 cd packages/api-client
