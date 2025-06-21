@@ -1,22 +1,21 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'Locations App',
-  description: 'Hotel locations management',
-}
+  title: 'ItemSeek - Universal Inventory Management',
+  description: 'Inventory management that adapts to any business',
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
       </head>
       <body>{children}</body>
     </html>
-  )
+  );
 }

@@ -1,26 +1,46 @@
 'use client';
 import { useState } from 'react';
-import useSWR from 'swr';
 import { type Location, type BusinessConfig } from '@itemseek/api-contracts';
+
+// Demo data
+const demoConfig: BusinessConfig = {
+  id: '1',
+  name: 'Demo Hotel',
+  industry: 'hospitality',
+  settings: {},
+  createdAt: new Date(),
+  locationTypes: ['Room', 'Floor', 'Storage'],
+  itemCategories: [],
+  statuses: [],
+  units: []
+};
+
+const demoLocations: Location[] = [
+  { id: '1', name: '101', type: 'Room', status: 'available', metadata: {} },
+  { id: '2', name: '102', type: 'Room', status: 'occupied', metadata: {} },
+  { id: '3', name: '103', type: 'Room', status: 'maintenance', metadata: {} },
+  { id: '4', name: '201', type: 'Room', status: 'available', metadata: {} },
+  { id: '5', name: '202', type: 'Room', status: 'reserved', metadata: {} },
+  { id: '6', name: '203', type: 'Room', status: 'occupied', metadata: {} },
+  { id: '7', name: 'A1', type: 'Storage', status: 'available', metadata: {} },
+  { id: '8', name: 'B1', type: 'Storage', status: 'occupied', metadata: {} },
+];
 
 // Universal location management (<85 lines) - rooms, warehouses, shelves, zones
 export default function LocationsApp() {
-  const { data: config } = useSWR<BusinessConfig>('/api/config');
-  const { data: locations, mutate } = useSWR<Location[]>('/api/locations');
+  const [locations, setLocations] = useState<Location[]>(demoLocations);
   const [selectedType, setSelectedType] = useState<string>('all');
+  const config = demoConfig;
 
-  const updateLocationStatus = async (id: string, status: string) => {
+  const updateLocationStatus = (id: string, status: string) => {
     if ('vibrate' in navigator) navigator.vibrate(10);
-    await fetch(`/api/locations/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status })
-    });
-    mutate();
+    setLocations(locations.map(loc => 
+      loc.id === id ? { ...loc, status } : loc
+    ));
   };
 
-  const types = ['all', ...(config?.locationTypes || [])];
-  const filtered = locations?.filter(
+  const types = ['all', ...(config.locationTypes || [])];
+  const filtered = locations.filter(
     loc => selectedType === 'all' || loc.type === selectedType
   );
 
@@ -41,7 +61,7 @@ export default function LocationsApp() {
       <header className="sticky top-0 z-10 bg-white shadow-sm px-4 py-3">
         <h1 className="text-xl font-bold">Locations</h1>
         <p className="text-sm text-gray-500">
-          {locations?.length || 0} {config?.locationTypes?.[0] || 'locations'}
+          {locations.length} {config.locationTypes[0] || 'locations'}
         </p>
       </header>
 
@@ -62,7 +82,7 @@ export default function LocationsApp() {
 
       {/* Location grid - visual status indicators */}
       <div className="px-4 pb-6 grid grid-cols-3 sm:grid-cols-4 gap-3">
-        {filtered?.map((location) => (
+        {filtered.map((location) => (
           <button
             key={location.id}
             onClick={() => {
@@ -77,7 +97,7 @@ export default function LocationsApp() {
             <span className="text-xs mt-1 opacity-90">
               {location.status}
             </span>
-            {location.type !== config?.locationTypes?.[0] && (
+            {location.type !== config.locationTypes[0] && (
               <span className="text-xs opacity-75">{location.type}</span>
             )}
           </button>
