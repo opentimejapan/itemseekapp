@@ -45,7 +45,7 @@ export default function SignupPage() {
       if (response.token) {
         setAuthToken(response.token);
         // Redirect to inventory app
-        window.location.href = process.env.NODE_ENV === 'production' ? '/inventory' : 'http://localhost:3001';
+        window.location.href = '/inventory';
       }
     } catch (err: any) {
       setError(err.message || 'Failed to create account. Please try again.');

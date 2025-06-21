@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       await login(formData.email, formData.password);
       // Redirect to inventory app
-      window.location.href = process.env.NODE_ENV === 'production' ? '/inventory' : 'http://localhost:3001';
+      window.location.href = '/inventory';
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');
       setLoading(false);
