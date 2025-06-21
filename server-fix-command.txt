@@ -1,0 +1,33 @@
+Run this command to fix the module resolution error on your server:
+
+ssh root@172.104.117.4 'cd /var/www/itemseekapp && git pull origin main && rm -rf node_modules packages/*/node_modules apps/*/node_modules packages/*/dist apps/*/.next && pnpm install --shamefully-hoist && cd packages/api-client && pnpm build && cd ../.. && pnpm build && pm2 restart all'
+
+Or run these commands step by step:
+
+1. SSH into server:
+   ssh root@172.104.117.4
+
+2. Navigate to project:
+   cd /var/www/itemseekapp
+
+3. Pull latest changes:
+   git pull origin main
+
+4. Clean everything:
+   rm -rf node_modules packages/*/node_modules apps/*/node_modules
+   rm -rf packages/*/dist apps/*/.next
+
+5. Install dependencies:
+   pnpm install --shamefully-hoist
+
+6. Build api-client first:
+   cd packages/api-client && pnpm build && cd ../..
+
+7. Build all apps:
+   pnpm build
+
+8. Restart services:
+   pm2 restart all
+
+9. Check status:
+   pm2 status
