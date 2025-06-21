@@ -1,25 +1,47 @@
 'use client';
-import { useState } from 'react';
-import { type Task } from '@itemseek/api-contracts';
-
-// Demo tasks data
-const demoTasks: Task[] = [
-  { id: '1', type: 'cleaning', targetId: 'Room 201', assignee: 'Maria', priority: 'high', status: 'pending', dueDate: new Date(Date.now() + 86400000), metadata: {} },
-  { id: '2', type: 'maintenance', targetId: 'AC Unit 5', assignee: 'John', priority: 'urgent', status: 'in-progress', dueDate: new Date(), metadata: {} },
-  { id: '3', type: 'delivery', targetId: 'Kitchen Supplies', assignee: 'Alex', priority: 'normal', status: 'pending', dueDate: new Date(Date.now() + 172800000), metadata: {} },
-  { id: '4', type: 'cleaning', targetId: 'Lobby Area', assignee: 'Sarah', priority: 'low', status: 'completed', dueDate: new Date(Date.now() - 86400000), metadata: {} },
-];
+import { useState, useEffect } from 'react';
+import useSWR from 'swr';
+import { type Task, type BusinessConfig } from '@itemseek/api-contracts';
+import { fetcher, apiFetch, getAuthToken } from '@itemseek/api-client';
 
 // Universal task management (<90 lines) - cleaning, maintenance, delivery, etc.
 export default function TasksApp() {
-  const [tasks, setTasks] = useState<Task[]>(demoTasks);
   const [filter, setFilter] = useState<string>('pending');
+  const [isAuth, setIsAuth] = useState(false);
+  
+  useEffect(() => {
+    if (getAuthToken()) setIsAuth(true);
+  }, []);
+  
+  const { data: config } = useSWR<BusinessConfig>(isAuth ? '/api/config' : null, fetcher);
+  const { data: tasks = [], mutate } = useSWR<Task[]>(
+    isAuth ? '/api/tasks' : null,
+    fetcher,
+    {
+      fallbackData: [
+        { id: '1', type: 'cleaning', targetId: 'Room 201', assignee: 'Maria', priority: 'high', status: 'pending', dueDate: new Date(Date.now() + 86400000), metadata: {} },
+        { id: '2', type: 'maintenance', targetId: 'AC Unit 5', assignee: 'John', priority: 'urgent', status: 'in-progress', dueDate: new Date(), metadata: {} },
+      ]
+    }
+  );
 
-  const updateTaskStatus = (id: string, status: string) => {
+  const updateTaskStatus = async (id: string, status: string) => {
     if ('vibrate' in navigator) navigator.vibrate(20);
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, status } : task
-    ));
+    
+    try {
+      await apiFetch(`/api/tasks/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      });
+      mutate();
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      // Fallback to local update
+      const updatedTasks = tasks.map(task => 
+        task.id === id ? { ...task, status } : task
+      );
+      mutate(updatedTasks, false);
+    }
   };
 
   const statuses = ['pending', 'in-progress', 'completed'];

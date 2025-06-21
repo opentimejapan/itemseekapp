@@ -4,6 +4,9 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3100';
 // Auth token management  
 let authToken: string | null = null;
 
+// Check if we're in production (server deployment)
+const isProduction = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
+
 export const setAuthToken = (token: string) => {
   authToken = token;
   if (typeof window !== 'undefined') {
