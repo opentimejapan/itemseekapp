@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@itemseek/api-contracts": "workspace:*",
+    "@itemseek/api-client": "workspace:*",
     "@itemseek/db": "workspace:*",
     "@trpc/server": "^10.44.0",
     "@trpc/client": "^10.44.0",
