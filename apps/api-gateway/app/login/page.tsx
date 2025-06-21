@@ -1,17 +1,28 @@
 'use client';
 import { useState } from 'react';
+import { login } from '@itemseek/api-client';
 
 export default function LoginPage() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Demo: just redirect to inventory app
-    alert('Demo: Logged in! Redirecting to inventory app...');
-    window.location.href = process.env.NODE_ENV === 'production' ? '/inventory' : 'http://localhost:3001';
+    setLoading(true);
+    setError('');
+
+    try {
+      await login(formData.email, formData.password);
+      // Redirect to inventory app
+      window.location.href = process.env.NODE_ENV === 'production' ? '/inventory' : 'http://localhost:3001';
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password');
+      setLoading(false);
+    }
   };
 
   return (
@@ -21,6 +32,12 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
           <p className="text-gray-600">Sign in to manage your inventory</p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -64,9 +81,10 @@ export default function LoginPage() {
           <div className="space-y-4">
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition duration-200 transform hover:scale-[1.02]"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              Sign In
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
 
             <div className="text-center text-sm text-gray-600">
@@ -84,16 +102,23 @@ export default function LoginPage() {
               <div className="w-full border-t border-gray-300"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Or continue with</span>
+              <span className="px-4 bg-white text-gray-500">Demo Account</span>
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-              <span className="text-sm font-medium text-gray-700">Google</span>
-            </button>
-            <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-              <span className="text-sm font-medium text-gray-700">Microsoft</span>
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600 text-center">
+              <strong>Email:</strong> demo@itemseek.com<br />
+              <strong>Password:</strong> demo123
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData({ email: 'demo@itemseek.com', password: 'demo123' });
+              }}
+              className="mt-2 w-full text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Fill Demo Credentials
             </button>
           </div>
         </div>

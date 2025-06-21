@@ -1,14 +1,18 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiFetch, setAuthToken } from '@itemseek/api-client';
 
 export default function SignupPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     businessName: '',
     industry: 'hospitality',
     email: '',
     password: '',
+    name: '',
   });
 
   const industries = [
@@ -20,11 +24,33 @@ export default function SignupPage() {
     { value: 'other', label: 'Other' }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Demo: just redirect to inventory app
-    alert('Demo: Account created! Redirecting to inventory app...');
-    window.location.href = process.env.NODE_ENV === 'production' ? '/inventory' : 'http://localhost:3001';
+    setLoading(true);
+    setError('');
+
+    try {
+      // Create account
+      const response = await apiFetch('/api/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name || formData.email.split('@')[0],
+          organizationName: formData.businessName,
+          industry: formData.industry,
+        }),
+      });
+
+      if (response.token) {
+        setAuthToken(response.token);
+        // Redirect to inventory app
+        window.location.href = process.env.NODE_ENV === 'production' ? '/inventory' : 'http://localhost:3001';
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to create account. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,7 +61,27 @@ export default function SignupPage() {
           <p className="text-gray-600">Start managing your inventory in minutes</p>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Your Name
+            </label>
+            <input
+              type="text"
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              placeholder="John Doe"
+              value={formData.name}
+              onChange={(e) => setFormData({...formData, name: e.target.value})}
+            />
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Business Name
@@ -96,9 +142,10 @@ export default function SignupPage() {
           <div className="space-y-4">
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition duration-200 transform hover:scale-[1.02]"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
             >
-              Create Account
+              {loading ? 'Creating Account...' : 'Create Account'}
             </button>
 
             <div className="text-center text-sm text-gray-600">
