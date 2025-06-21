@@ -1,14 +1,31 @@
 {
   "name": "@itemseek/api-client",
   "version": "0.0.1",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --clean --watch",
+    "type-check": "tsc --noEmit"
+  },
   "dependencies": {
     "@itemseek/api-contracts": "workspace:*",
     "swr": "^2.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "tsup": "^8.5.0",
     "typescript": "^5.0.0"
   }
 }
